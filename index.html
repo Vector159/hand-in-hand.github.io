@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Hand In Hand</title>
+    <!-- Incluir los scripts del chatbot -->
+    <script src="chatbot.js"></script>
+    <script src="chatbot-ui.js"></script>
+    <style>
+        /* Estilos para el spinner de carga */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para el simulador de CAPTCHA */
+        .captcha-container {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .captcha-box {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            width: 200px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .captcha-text {
+            font-family: 'Courier New', monospace;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            color: #333;
+            user-select: none;
+            position: relative;
+            z-index: 2;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .captcha-line {
+            position: absolute;
+            height: 2px;
+            background-color: #666;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        .captcha-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: #999;
+            border-radius: 50%;
+            z-index: 1;
+        }
+        
+        .captcha-input {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+        
+        .refresh-captcha {
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .refresh-captcha svg {
+            margin-right: 5px;
+        }
+        
+        .refresh-captcha:hover {
+            background-color: #e0e0e0;
+        }
+        
+        /* Estilos para el mensaje de error del CAPTCHA */
+        #captcha-error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        /* Estilos para mensajes de error */
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        /* Estilos para el formulario de verificación */
+        .verification-form {
+            display: none;
+        }
+        
+        /* Estilos para el chatbot */
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+        
+        .chatbot-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .chatbot-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .chatbot-panel {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chatbot-header {
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chatbot-title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .chatbot-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: white;
+        }
+        
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .chatbot-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chatbot-message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            display: flex;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+        }
+        
+        .user-message {
+            align-self: flex-end;
+        }
+        
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            overflow: hidden;
+        }
+        
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .message-content {
+            padding: 10px 15px;
+            border-radius: 18px;
+            background-color: #f1f1f1;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .bot-message .message-content {
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        
+        .user-message .message-content {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .chatbot-input {
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+        }
+        
+        .chatbot-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        .chatbot-send {
+            background: none;
+            border: none;
+            color: #4CAF50;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        /* Estilos para dispositivos móviles */
+        @media (max-width: 480px) {
+            .chatbot-panel {
+                width: 100%;
+                height: 100%;
+                bottom: 0;
+                right: 0;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <nav class="nav-links">
+                <a href="#nosotros">Nosotros</a>
+                <a href="#productores">Productores</a>
+                <a href="#contacto">Contacto</a>
+                <a href="#" class="login-button" id="open-login">Iniciar Sesión</a>
+            </nav>
+            <button class="add-button">Agregar ►</button>
+        </div>
+    </header>
+    
+    <section class="hero-section">
+        <h1>Bienvenido a Hand In Hand</h1>
+        <p>Conectando productores locales con consumidores conscientes</p>
+    </section>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+    
+    <!-- Modal de Login -->
+    <div class="modal" id="login-modal">
+        <div class="modal-header">
+            <h2>Iniciar Sesión</h2>
+            <span class="close-btn" id="close-login">&times;</span>
+        </div>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Correo Electrónico" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+            <p>¿No tienes cuenta? <a href="#" id="switch-to-signup">Registrarse</a></p>
+            <p id="verification-message" class="error-message"></p>
+        </form>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div class="modal" id="signup-modal">
+        <div class="modal-header">
+            <h2>Registrarse</h2>
+            <span class="close-btn" id="close-signup">&times;</span>
+        </div>
+        
+        <form id="signup-form">
+            <input type="text" id="nombre" placeholder="Nombre Completo" required>
+            <div id="nombre-error" class="error-message"></div>
+            
+            <input type="email" id="email-signup" placeholder="Correo Electrónico" required>
+            <div id="email-error" class="error-message"></div>
+            
+            <input type="password" id="password-signup" placeholder="Contraseña (mínimo 6 caracteres)" required>
+            <div id="password-error" class="error-message"></div>
+            
+            <!-- Simulador de CAPTCHA -->
+            <div class="captcha-container">
+                <div class="captcha-box" id="captcha-box">
+                    <div class="captcha-text" id="captcha-text"></div>
+                    <!-- Las líneas y puntos se añadirán con JavaScript -->
+                </div>
+                <input type="text" id="captcha-input" class="captcha-input" placeholder="Ingresa el código" maxlength="6" required>
+                <button type="button" class="refresh-captcha" id="refresh-captcha">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                        <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                    </svg>
+                    Refrescar
+                </button>
+            </div>
+            <div id="captcha-error" class="error-message"></div>
+            
+            <button type="submit">Registrarse</button>
+            <p>¿Ya tienes cuenta? <a href="#" id="switch-to-login">Iniciar Sesión</a></p>
+            <p id="signup-message" class="error-message"></p>
+        </form>
+
+        <form id="verification-form" class="verification-form">
+            <p>Hemos enviado un código de verificación a tu correo electrónico.</p>
+            <input type="text" id="verification-code" placeholder="Ingresa el código de 6 dígitos" maxlength="6" required>
+            <div id="code-error" class="error-message"></div>
+            <button type="submit">Verificar Cuenta</button>
+            <div class="resend-code">
+                ¿No recibiste el código? <a id="resend-code">Reenviar código</a>
+                <span id="countdown"></span>
+            </div>
+        </form>
+    </div>
+
+    <section class="featured-section">
+        <div class="producer-card">
+            <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae" alt="Granja Orgánica" class="producer-image">
+            <h2>Granja Orgánica Valle Verde</h2>
+            <p>Productos 100% orgánicos cultivados con métodos sostenibles</p>
+            <button class="reserve-btn">Ver productos</button>
+        </div>
+        
+        <div class="producer-card">
+            <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff" alt="Viñedos" class="producer-image">
+            <h2>Viñedos Don Carlos</h2>
+            <p>Vinos artesanales de alta calidad desde 1985</p>
+            <button class="reserve-btn">Ver productos</button>
+        </div>
+        
+        <div class="producer-card">
+            <img src="https://images.unsplash.com/photo-1518977676601-b53f82aba655" alt="Miel Natural" class="producer-image">
+            <h2>Mieles La Abejita</h2>
+            <p>Miel pura y derivados de apicultura responsable</p>
+            <button class="reserve-btn">Ver productos</button>
+        </div>
+    </section>
+
+    <section class="season-section">
+        <h2>Productos de Temporada</h2>
+        <div class="exchange-products">
+            <span class="product-tag">Fresas</span>
+            <span class="product-tag">Aguacates</span>
+            <span class="product-tag">Mangos</span>
+            <span class="product-tag">Zanahorias</span>
+            <span class="product-tag">Lechugas</span>
+        </div>
+        <button class="reserve-btn">Ver todos los productos</button>
+    </section>
+
+    <section class="faq-section">
+        <h2>Preguntas Frecuentes</h2>
+        <div class="faq-item">
+            <h3>¿Cómo funciona el sistema de pedidos?</h3>
+            <p>Puedes reservar productos directamente con los productores y acordar la forma de entrega.</p>
+        </div>
+        <div class="faq-item">
+            <h3>¿Los productos son orgánicos?</h3>
+            <p>Cada productor tiene sus métodos, pero todos cumplen con nuestros estándares de calidad.</p>
+        </div>
+    </section>
+
+    <table class="info-table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Temporada</th>
+                <th>Productor</th>
+                <th>Región</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Fresas</td>
+                <td>Enero - Abril</td>
+                <td>Granja Valle Verde</td>
+                <td>Valle Central</td>
+            </tr>
+            <tr>
+                <td>Uvas</td>
+                <td>Marzo - Mayo</td>
+                <td>Viñedos Don Carlos</td>
+                <td>Zona Norte</td>
+            </tr>
+            <tr>
+                <td>Miel</td>
+                <td>Todo el año</td>
+                <td>Mieles La Abejita</td>
+                <td>Montañas</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <section class="article-section">
+        <h2>Nuestros Métodos Sostenibles</h2>
+        <div class="article-content">
+            <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ce" alt="Agricultura sostenible" class="article-image">
+            <div>
+                <p>En Hand In Hand promovemos prácticas agrícolas que respetan el medio ambiente y apoyan a las comunidades locales. Nuestros productores utilizan métodos que:</p>
+                <ul>
+                    <li>Reducen el uso de pesticidas</li>
+                    <li>Optimizan el consumo de agua</li>
+                    <li>Fomentan la biodiversidad</li>
+                    <li>Apoyan el comercio justo</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Simulador de CAPTCHA
+        const captchaSimulator = {
+            currentCaptcha: '',
+            
+            init: function() {
+                this.generateCaptcha();
+                document.getElementById('refresh-captcha').addEventListener('click', () => this.generateCaptcha());
+            },
+            
+            generateCaptcha: function() {
+                // Generar un código aleatorio de 6 caracteres (letras y números)
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let captcha = '';
+                for (let i = 0; i < 6; i++) {
+                    captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                this.currentCaptcha = captcha;
+                
+                // Mostrar el CAPTCHA
+                const captchaText = document.getElementById('captcha-text');
+                captchaText.textContent = captcha;
+                
+                // Limpiar el contenedor
+                const captchaBox = document.getElementById('captcha-box');
+                const oldLines = captchaBox.querySelectorAll('.captcha-line');
+                const oldDots = captchaBox.querySelectorAll('.captcha-dot');
+                
+                oldLines.forEach(line => line.remove());
+                oldDots.forEach(dot => dot.remove());
+                
+                // Añadir líneas aleatorias
+                for (let i = 0; i < 3; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'captcha-line';
+                    line.style.top = `${Math.random() * 100}%`;
+                    line.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+                    line.style.opacity = `${Math.random() * 0.5 + 0.25}`;
+                    captchaBox.appendChild(line);
+                }
+                
+                // Añadir puntos aleatorios
+                for (let i = 0; i < 30; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'captcha-dot';
+                    dot.style.top = `${Math.random() * 100}%`;
+                    dot.style.left = `${Math.random() * 100}%`;
+                    dot.style.opacity = `${Math.random() * 0.5 + 0.25}`;
+                    captchaBox.appendChild(dot);
+                }
+                
+                // Limpiar el input
+                document.getElementById('captcha-input').value = '';
+                document.getElementById('captcha-error').textContent = '';
+            },
+            
+            validate: function() {
+                const input = document.getElementById('captcha-input').value.toUpperCase();
+                if (!input) {
+                    document.getElementById('captcha-error').textContent = 'Por favor, completa el CAPTCHA';
+                    return false;
+                }
+                
+                if (input === this.currentCaptcha) {
+                    return true;
+                } else {
+                    document.getElementById('captcha-error').textContent = 'Código CAPTCHA incorrecto';
+                    this.generateCaptcha();
+                    return false;
+                }
+            }
+        };
+        
+        // Manejo de modales
+        const modals = {
+            init: function() {
+                document.getElementById("open-login").addEventListener("click", (e) => {
+                    if (!emailVerification.isLoggedIn) {
+                        this.showModal(e, 'login');
+                    }
+                });
+                document.getElementById("switch-to-signup").addEventListener("click", (e) => this.switchModal(e, 'signup'));
+                document.getElementById("switch-to-login").addEventListener("click", (e) => this.switchModal(e, 'login'));
+                document.querySelectorAll('.close-btn').forEach(btn => btn.addEventListener("click", () => this.closeModals()));
+                document.getElementById("modal-overlay").addEventListener("click", () => this.closeModals());
+            },
+            
+            showModal: function(e, modalType) {
+                e.preventDefault();
+                document.getElementById(`${modalType}-modal`).style.display = 'block';
+                document.getElementById("modal-overlay").style.display = 'block';
+                
+                // Generar nuevo CAPTCHA si se muestra el modal de registro
+                if (modalType === 'signup') {
+                    captchaSimulator.generateCaptcha();
+                }
+            },
+            
+            switchModal: function(e, modalType) {
+                e.preventDefault();
+                document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
+                document.getElementById(`${modalType}-modal`).style.display = 'block';
+                
+                // Generar nuevo CAPTCHA si se cambia al modal de registro
+                if (modalType === 'signup') {
+                    captchaSimulator.generateCaptcha();
+                }
+            },
+            
+            closeModals: function() {
+                document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
+                document.getElementById("modal-overlay").style.display = 'none';
+                this.resetForms();
+            },
+            
+            resetForms: function() {
+                document.getElementById("signup-form").reset();
+                document.getElementById("verification-form").reset();
+                document.getElementById("signup-form").style.display = 'block';
+                document.getElementById("verification-form").style.display = 'none';
+                
+                // Limpiar mensajes de error
+                document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            }
+        };
+
+        // Verificación de email
+        const emailVerification = {
+            code: null,
+            expiration: null,
+            userEmail: null,
+            userNombre: null,
+            isLoggedIn: false,
+            
+            init: function() {
+                document.getElementById("signup-form").addEventListener("submit", (e) => this.handleSignup(e));
+                document.getElementById("verification-form").addEventListener("submit", (e) => this.verifyCode(e));
+                document.getElementById("resend-code").addEventListener("click", (e) => this.resendCode(e));
+            },
+            
+            handleSignup: async function(e) {
+                e.preventDefault();
+                if (!this.validateSignup()) return;
+                
+                // Validar el CAPTCHA
+                if (!captchaSimulator.validate()) {
+                    return;
+                }
+
+                const email = document.getElementById("email-signup").value;
+                const nombre = document.getElementById("nombre").value;
+                const password = document.getElementById("password-signup").value;
+                this.userEmail = email;
+                this.userNombre = nombre;
+
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '<span class="spinner"></span> Enviando...';
+                submitButton.disabled = true;
+
+                try {
+                    const response = await fetch('http://localhost:3000/enviar-codigo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            email, 
+                            nombre, 
+                            password,
+                            captchaToken: 'simulado' // Enviar un token simulado
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.code = data.codigo;
+                        this.expiration = Date.now() + 900000; // 15 minutos
+
+                        document.getElementById("signup-form").style.display = 'none';
+                        document.getElementById("verification-form").style.display = 'block';
+                        this.startCountdown();
+                    } else {
+                        this.showMessage(
+                            document.getElementById("signup-message"),
+                            data.error || "Error al enviar el código",
+                            "red"
+                        );
+                        // Generar nuevo CAPTCHA si hay error
+                        captchaSimulator.generateCaptcha();
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    this.showMessage(
+                        document.getElementById("signup-message"),
+                        "Error de conexión con el servidor",
+                        "red"
+                    );
+                    // Generar nuevo CAPTCHA si hay error
+                    captchaSimulator.generateCaptcha();
+                } finally {
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                }
+            },
+            
+            verifyCode: async function(e) {
+                e.preventDefault();
+                const enteredCode = document.getElementById("verification-code").value;
+                const verifyButton = e.target.querySelector('button[type="submit"]');
+                const originalText = verifyButton.innerHTML;
+                verifyButton.innerHTML = '<span class="spinner"></span> Verificando...';
+                verifyButton.disabled = true;
+                
+                try {
+                    const response = await fetch('http://localhost:3000/verificar-codigo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            codigoIngresado: enteredCode
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.isLoggedIn = true;
+                        this.showUserProfile();
+                        this.showMessage(
+                            document.getElementById("signup-message"),
+                            "¡Registro exitoso!",
+                            "green"
+                        );
+                        setTimeout(() => modals.closeModals(), 1500);
+                    } else {
+                        this.showMessage(
+                            document.getElementById("code-error"),
+                            data.error || 'Código incorrecto',
+                            'red'
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    this.showMessage(
+                        document.getElementById("code-error"),
+                        "Error de conexión con el servidor",
+                        "red"
+                    );
+                } finally {
+                    verifyButton.innerHTML = originalText;
+                    verifyButton.disabled = false;
+                }
+            },
+
+            showUserProfile: function() {
+                const loginButton = document.getElementById("open-login");
+                loginButton.innerHTML = `
+                    <div class="user-profile" id="user-profile">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Perfil" class="user-avatar">
+                        <span>${this.userNombre}</span>
+                        <div class="profile-dropdown" id="profile-dropdown">
+                            <a href="#">Mi perfil</a>
+                            <a href="#">Configuración</a>
+                            <a href="#" class="logout" id="logout-btn">Cerrar sesión</a>
+                        </div>
+                    </div>
+                `;
+                loginButton.classList.remove('login-button');
+                loginButton.style.padding = '0';
+                
+                // Agregar eventos para el menú desplegable
+                const profile = document.getElementById("user-profile");
+                const dropdown = document.getElementById("profile-dropdown");
+                
+                profile.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    dropdown.classList.toggle('show');
+                });
+                
+                document.getElementById("logout-btn").addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.logout();
+                });
+                
+                // Cerrar el menú al hacer clic fuera
+                document.addEventListener('click', (e) => {
+                    if (!profile.contains(e.target)) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+            },
+            
+            logout: function() {
+                this.isLoggedIn = false;
+                const loginButton = document.getElementById("open-login");
+                loginButton.innerHTML = 'Iniciar Sesión';
+                loginButton.classList.add('login-button');
+                loginButton.style.padding = '8px 20px';
+                
+                // Cerrar el menú desplegable si está abierto
+                const dropdown = document.getElementById("profile-dropdown");
+                if (dropdown) dropdown.classList.remove('show');
+            },
+
+            validateSignup: function() {
+                const email = document.getElementById("email-signup").value;
+                const nombre = document.getElementById("nombre").value;
+                const password = document.getElementById("password-signup").value;
+                let isValid = true;
+
+                // Limpiar mensajes de error
+                document.getElementById("nombre-error").textContent = '';
+                document.getElementById("email-error").textContent = '';
+                document.getElementById("password-error").textContent = '';
+                document.getElementById("captcha-error").textContent = '';
+                document.getElementById("signup-message").textContent = '';
+                
+                // Validar nombre
+                if (!nombre) {
+                    document.getElementById("nombre-error").textContent = 'El nombre es obligatorio';
+                    isValid = false;
+                }
+                
+                // Validar email
+                if (!email) {
+                    document.getElementById("email-error").textContent = 'El email es obligatorio';
+                    isValid = false;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    document.getElementById("email-error").textContent = 'Ingresa un email válido';
+                    isValid = false;
+                }
+                
+                // Validar contraseña
+                if (!password) {
+                    document.getElementById("password-error").textContent = 'La contraseña es obligatoria';
+                    isValid = false;
+                } else if (password.length < 6) {
+                    document.getElementById("password-error").textContent = 'La contraseña debe tener al menos 6 caracteres';
+                    isValid = false;
+                }
+                
+                return isValid;
+            },
+            
+            resendCode: function(e) {
+                e.preventDefault();
+                // Generar nuevo CAPTCHA antes de reenviar
+                captchaSimulator.generateCaptcha();
+                // Mostrar el formulario de registro para obtener un nuevo CAPTCHA
+                document.getElementById("verification-form").style.display = 'none';
+                document.getElementById("signup-form").style.display = 'block';
+                this.showMessage(
+                    document.getElementById("signup-message"),
+                    "Por favor, completa el formulario nuevamente para reenviar el código",
+                    "blue"
+                );
+            },
+            
+            startCountdown: function() {
+                let seconds = 120;
+                const countdownElement = document.getElementById("countdown");
+                
+                const interval = setInterval(() => {
+                    countdownElement.textContent = ` (${seconds}s)`;
+                    if (seconds-- <= 0) {
+                        clearInterval(interval);
+                        countdownElement.textContent = '';
+                    }
+                }, 1000);
+            },
+            
+            showMessage: function(element, text, color) {
+                element.textContent = text;
+                element.style.color = color;
+                setTimeout(() => element.textContent = '', 5000);
+            }
+        };
+
+        // Login
+        document.getElementById("login-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const message = document.getElementById("verification-message");
+            const loginButton = e.target.querySelector('button[type="submit"]');
+            const originalText = loginButton.innerHTML;
+            
+            loginButton.innerHTML = '<span class="spinner"></span> Iniciando...';
+            loginButton.disabled = true;
+            
+            try {
+                const response = await fetch('http://localhost:3000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    emailVerification.isLoggedIn = true;
+                    emailVerification.userEmail = data.user.email;
+                    emailVerification.userNombre = data.user.nombre;
+                    emailVerification.showUserProfile();
+                    message.textContent = '¡Inicio de sesión exitoso!';
+                    message.style.color = 'green';
+                    setTimeout(() => modals.closeModals(), 1500);
+                } else {
+                    message.textContent = data.error || 'Credenciales inválidas';
+                    message.style.color = 'red';
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                message.textContent = 'Error de conexión con el servidor';
+                message.style.color = 'red';
+            } finally {
+                loginButton.innerHTML = originalText;
+                loginButton.disabled = false;
+            }
+        });
+
+        // Inicialización
+        captchaSimulator.init();
+        modals.init();
+        emailVerification.init();
+    </script>
+</body>
+</html>
